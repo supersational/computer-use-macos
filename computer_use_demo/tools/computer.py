@@ -245,13 +245,16 @@ class ComputerTool(BaseAnthropicTool):
         if not self._scaling_enabled:
             return x, y
         ratio = self.width / self.height
+
         target_dimension = None
-        for dimension in MAX_SCALING_TARGETS.values():
-            # allow some error in the aspect ratio - not ratios are exactly 16:9
-            if abs(dimension["width"] / dimension["height"] - ratio) < 0.02:
-                if dimension["width"] < self.width:
-                    target_dimension = dimension
-                break
+        min_aspect_ratio_diff = float('inf')
+
+        for dimension_name, dimension in MAX_SCALING_TARGETS.items():
+            aspect_ratio_diff = abs(dimension["width"] / dimension["height"] - ratio)
+            if aspect_ratio_diff < min_aspect_ratio_diff:
+                min_aspect_ratio_diff = aspect_ratio_diff
+                target_dimension = dimension
+
         if target_dimension is None:
             return x, y
         # should be less than 1

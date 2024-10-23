@@ -20,7 +20,7 @@ Control your OSX computer using Anthropic's Claude.
 
 # Quickstart
 
-Install requirements with:
+Install python requirements using pip and [cliclick from homebrew](https://formulae.brew.sh/formula/cliclick):
 ```
 pip install -r requirements.txt
 brew install cliclick

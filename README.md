@@ -1,6 +1,6 @@
 # Anthropic Computer Use Demo
 
-Control your OSX computer using Anthropic's Claude. 
+Control your OSX computer using Anthropic's Claude. Original Linux (containerised) [repo here](https://github.com/anthropics/anthropic-quickstarts/tree/main/computer-use-demo). 
 
 # Adapted for MacOS with the following modifications
 

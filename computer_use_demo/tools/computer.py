@@ -19,8 +19,6 @@ def get_screen_size():
     # Get screen width and height
     screen_width, screen_height = pyautogui.size()
 
-    print(f"Screen width: {screen_width}")
-    print(f"Screen height: {screen_height}")
     return screen_width, screen_height
 screen_width, screen_height = get_screen_size() # ensure this works before starting
 assert screen_width > 0 and screen_height > 0, "WIDTH, HEIGHT must be set"
@@ -153,6 +151,7 @@ class ComputerTool(BaseAnthropicTool):
                 raise ToolError(output=f"{text} must be a string")
 
             if action == "key":
+                text = sanitize_key(text)
                 return await self.shell(f"cliclick kp:{text}")
             elif action == "type":
                 results: list[ToolResult] = []
@@ -267,3 +266,13 @@ class ComputerTool(BaseAnthropicTool):
             return round(x / x_scaling_factor), round(y / y_scaling_factor)
         # scale down
         return round(x * x_scaling_factor), round(y * y_scaling_factor)
+
+
+
+def sanitize_key(text):
+    # needs to be one of https://github.com/BlueM/cliclick/blob/682584d82140133fda6ff43d25939023a4e85075/Actions/KeyPressAction.m#L50
+    # arrow-down, arrow-left, arrow-right, arrow-up, brightness-down, brightness-up, delete, end, enter, esc, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, fwd-delete, home, keys-light-down, keys-light-toggle, keys-light-up, mute, num-0, num-1, num-2, num-3, num-4, num-5, num-6, num-7, num-8, num-9, num-clear, num-divide, num-enter, num-equals, num-minus, num-multiply, num-plus, page-down, page-up, play-next, play-pause, play-previous, return, space, tab, volume-down, volume-up
+    if text.lower() == "return":
+        text = "enter"
+    # TODO: Add more substitutions as we notice the LLM use a different key name e.g. "left" should go to "left-arrow"?
+    return text

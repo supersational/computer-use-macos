@@ -7,11 +7,22 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
+import pyautogui
 
 from anthropic.types.beta import BetaToolComputerUse20241022Param
 
 from .base import BaseAnthropicTool, ToolError, ToolResult
 from .run import run
+
+
+def get_screen_size():
+    # Get screen width and height
+    screen_width, screen_height = pyautogui.size()
+
+    print(f"Screen width: {screen_width}")
+    print(f"Screen height: {screen_height}")
+get_screen_size() # ensure this works before starting
+
 
 OUTPUT_DIR = "/tmp/outputs"
 
@@ -93,8 +104,7 @@ class ComputerTool(BaseAnthropicTool):
     def __init__(self):
         super().__init__()
 
-        self.width = int(os.getenv("WIDTH") or 0)
-        self.height = int(os.getenv("HEIGHT") or 0)
+        self.width, self.height = get_screen_size()
         assert self.width and self.height, "WIDTH, HEIGHT must be set"
         if (display_num := os.getenv("DISPLAY_NUM")) is not None:
             self.display_num = int(display_num)
@@ -103,7 +113,7 @@ class ComputerTool(BaseAnthropicTool):
             self.display_num = None
             self._display_prefix = ""
 
-        self.xdotool = f"{self._display_prefix}xdotool"
+        # self.xdotool = f"{self._display_prefix}xdotool"
 
     async def __call__(
         self,
@@ -113,6 +123,7 @@ class ComputerTool(BaseAnthropicTool):
         coordinate: tuple[int, int] | None = None,
         **kwargs,
     ):
+        print("executing action:", action, text, coordinate)
         if action in ("mouse_move", "left_click_drag"):
             if coordinate is None:
                 raise ToolError(f"coordinate is required for {action}")
@@ -128,11 +139,9 @@ class ComputerTool(BaseAnthropicTool):
             )
 
             if action == "mouse_move":
-                return await self.shell(f"{self.xdotool} mousemove --sync {x} {y}")
+                return await self.shell(f"cliclick m:{x},{y}")
             elif action == "left_click_drag":
-                return await self.shell(
-                    f"{self.xdotool} mousedown 1 mousemove --sync {x} {y} mouseup 1"
-                )
+                return await self.shell(f"cliclick dd:1 m:{x},{y} du:1")
 
         if action in ("key", "type"):
             if text is None:
@@ -143,11 +152,11 @@ class ComputerTool(BaseAnthropicTool):
                 raise ToolError(output=f"{text} must be a string")
 
             if action == "key":
-                return await self.shell(f"{self.xdotool} key -- {text}")
+                return await self.shell(f"cliclick kp:{text}")
             elif action == "type":
                 results: list[ToolResult] = []
                 for chunk in chunks(text, TYPING_GROUP_SIZE):
-                    cmd = f"{self.xdotool} type --delay {TYPING_DELAY_MS} -- {shlex.quote(chunk)}"
+                    cmd = f"cliclick t:{shlex.quote(chunk)}" # TODO: add back TYPING_DELAY_MS
                     results.append(await self.shell(cmd, take_screenshot=False))
                 screenshot_base64 = (await self.screenshot()).base64_image
                 return ToolResult(
@@ -172,25 +181,23 @@ class ComputerTool(BaseAnthropicTool):
             if action == "screenshot":
                 return await self.screenshot()
             elif action == "cursor_position":
-                result = await self.shell(
-                    f"{self.xdotool} getmouselocation --shell",
-                    take_screenshot=False,
-                )
+                result = await self.shell("cliclick p", take_screenshot=False)
                 output = result.output or ""
+                # get both from output like 704,599
+                xp, yp = re.findall(r"\d+", output)
                 x, y = self.scale_coordinates(
                     ScalingSource.COMPUTER,
-                    int(output.split("X=")[1].split("\n")[0]),
-                    int(output.split("Y=")[1].split("\n")[0]),
+                    int(xp), int(yp)
                 )
                 return result.replace(output=f"X={x},Y={y}")
             else:
                 click_arg = {
-                    "left_click": "1",
-                    "right_click": "3",
-                    "middle_click": "2",
-                    "double_click": "--repeat 2 --delay 500 1",
+                    "right_click": "rc",
+                    "left_click": "c",
+                    "double_click": "dc",
                 }[action]
-                return await self.shell(f"{self.xdotool} click {click_arg}")
+                return await self.shell(f"cliclick {click_arg}:.")
+
 
         raise ToolError(f"Invalid action: {action}")
 
@@ -200,12 +207,7 @@ class ComputerTool(BaseAnthropicTool):
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"screenshot_{uuid4().hex}.png"
 
-        # Try gnome-screenshot first
-        if shutil.which("gnome-screenshot"):
-            screenshot_cmd = f"{self._display_prefix}gnome-screenshot -f {path} -p"
-        else:
-            # Fall back to scrot if gnome-screenshot isn't available
-            screenshot_cmd = f"{self._display_prefix}scrot -p {path}"
+        screenshot_cmd = f"screencapture -x {path}"
 
         result = await self.shell(screenshot_cmd, take_screenshot=False)
         if self._scaling_enabled:

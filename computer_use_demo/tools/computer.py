@@ -21,7 +21,9 @@ def get_screen_size():
 
     print(f"Screen width: {screen_width}")
     print(f"Screen height: {screen_height}")
-get_screen_size() # ensure this works before starting
+    return screen_width, screen_height
+screen_width, screen_height = get_screen_size() # ensure this works before starting
+assert screen_width > 0 and screen_height > 0, "WIDTH, HEIGHT must be set"
 
 
 OUTPUT_DIR = "/tmp/outputs"

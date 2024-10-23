@@ -76,7 +76,7 @@ def setup_state():
     if "tools" not in st.session_state:
         st.session_state.tools = {}
     if "only_n_most_recent_images" not in st.session_state:
-        st.session_state.only_n_most_recent_images = 10
+        st.session_state.only_n_most_recent_images = 1 # keep down cost while testing
     if "custom_system_prompt" not in st.session_state:
         st.session_state.custom_system_prompt = load_from_storage("system_prompt") or ""
     if "hide_images" not in st.session_state:

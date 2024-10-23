@@ -115,7 +115,6 @@ class ComputerTool(BaseAnthropicTool):
             self.display_num = None
             self._display_prefix = ""
 
-        # self.xdotool = f"{self._display_prefix}xdotool"
 
     async def __call__(
         self,
@@ -216,9 +215,12 @@ class ComputerTool(BaseAnthropicTool):
             x, y = self.scale_coordinates(
                 ScalingSource.COMPUTER, self.width, self.height
             )
+            # Let's use a different output path so we can debug better
+            output_path = Path(str(path) + ".resized.png")
             await self.shell(
-                f"convert {path} -resize {x}x{y}! {path}", take_screenshot=False
+                f"sips -z {y} {x} {path} --out {output_path}", take_screenshot=False
             )
+            path = output_path
 
         if path.exists():
             return result.replace(

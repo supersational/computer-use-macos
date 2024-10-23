@@ -207,7 +207,7 @@ class ComputerTool(BaseAnthropicTool):
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"screenshot_{uuid4().hex}.png"
 
-        screenshot_cmd = f"screencapture -x {path}"
+        screenshot_cmd = f"screencapture  -C -x {path}"
 
         result = await self.shell(screenshot_cmd, take_screenshot=False)
         if self._scaling_enabled:

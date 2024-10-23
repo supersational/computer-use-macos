@@ -36,7 +36,7 @@ Action = Literal[
     "left_click",
     "left_click_drag",
     "right_click",
-    "middle_click",
+    # "middle_click", # cliclick does not support middle click
     "double_click",
     "screenshot",
     "cursor_position",
